@@ -52,13 +52,13 @@ class handler(BaseHTTPRequestHandler):
 
         results = []
 
-        # まず zipcode.db
+        # zipcode.db検索
         try:
             conn = sqlite3.connect(str(ZIP_DB))
             cur = conn.cursor()
 
             if q.isdigit():
-                kw = f"%{_normalize_postal(q)}%"
+                kw = f"{_normalize_postal(q)}%"
                 cur.execute(
                     """
                     SELECT zipcode, pref, city, town
@@ -91,14 +91,14 @@ class handler(BaseHTTPRequestHandler):
         except Exception:
             pass
 
-        # zipcodeで0件のときだけ jigyosyo.db
+        # zipcodeで見つからない場合 jigyosyo.db検索
         if not results:
             try:
                 conn = sqlite3.connect(str(JIG_DB))
                 cur = conn.cursor()
 
                 if q.isdigit():
-                    kw = f"%{_normalize_postal(q)}%"
+                    kw = f"{_normalize_postal(q)}%"
                     cur.execute(
                         """
                         SELECT zipcode, name, address
