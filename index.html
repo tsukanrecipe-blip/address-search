@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>配送先検索</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
+      background: #f6f7fb;
+      color: #222;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    .sub {
+      margin: 0 0 20px;
+      color: #666;
+      font-size: 14px;
+    }
+    label {
+      display: block;
+      margin: 0 0 8px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    input[type="text"] {
+      flex: 1 1 360px;
+      min-width: 0;
+      height: 48px;
+      padding: 0 14px;
+      border: 1px solid #cfd5df;
+      border-radius: 10px;
+      font-size: 16px;
+      background: #fff;
+    }
+    button {
+      height: 48px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #111827;
+      color: #fff;
+    }
+    button.secondary {
+      background: #6b7280;
+    }
+    .hint {
+      color: #666;
+      font-size: 13px;
+      margin: 0 0 18px;
+    }
+    .status {
+      min-height: 24px;
+      margin: 8px 0 16px;
+      font-size: 14px;
+      color: #444;
+    }
+    .result {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fafafa;
+      margin-top: 12px;
+    }
+    .result h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    .field-title {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .field-value {
+      font-size: 16px;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+    .raw {
+      margin-top: 16px;
+      background: #111827;
+      color: #f9fafb;
+      border-radius: 10px;
+      padding: 12px;
+      overflow: auto;
+      font-size: 12px;
+    }
+    .copy-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .small {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>配送先検索</h1>
+      <p class="sub">郵便番号またはキーワードで検索</p>
+
+      <label for="q">検索</label>
+      <div class="row">
+        <input id="q" type="text" placeholder="例：1000001 / 港島 / 千代田" />
+        <button id="searchBtn">検索</button>
+        <button id="clearBtn" class="secondary" type="button">クリア</button>
+      </div>
+      <p class="hint">郵便番号はハイフンありでも可。見つからなければ事業所DBも自動で検索。</p>
+
+      <div id="status" class="status"></div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "/api/search";
+    const qEl = document.getElementById("q");
+    const searchBtn = document.getElementById("searchBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const statusEl = document.getElementById("status");
+    const resultsEl = document.getElementById("results");
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text || "";
+    }
+
+    function clearResults() {
+      resultsEl.innerHTML = "";
+    }
+
+    function toAddressLine(item) {
+      return item.address || "";
+    }
+
+    function toDisplayName(item) {
+      return item.name || "(名称なし)";
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus("コピーしました");
+      } catch {
+        setStatus("コピーに失敗しました");
+      }
+    }
+
+    function renderResults(data) {
+      clearResults();
+
+      if (!data || !Array.isArray(data.results) || data.results.length === 0) {
+        resultsEl.innerHTML = `
+          <div class="result">
+            <h2>検索結果</h2>
+            <div class="field">
+              <div class="field-title">結果</div>
+              <div class="field-value">該当なし</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const html = data.results.map((item, idx) => {
+        const zipcode = item.zipcode || "";
+        const name = toDisplayName(item);
+        const address = toAddressLine(item);
+        const rawJson = JSON.stringify(item.raw || {}, null, 2);
+        const copyBody = [zipcode, name !== "(名称なし)" ? name : "", address]
+          .filter(Boolean)
+          .join("\n");
+
+        return `
+          <div class="result">
+            <h2>結果 ${idx + 1}</h2>
+
+            <div class="field">
+              <div class="field-title">郵便番号</div>
+              <div class="field-value">${escapeHtml(zipcode)}</div>
+            </div>
+
+            <div class="field">
+              <div class="field-title">名称</div>
+              <div class="field-value">${escapeHtml(name)}</div>
+            </div>
+
+            <div class="field">
+              <div class="field-title">住所</div>
+              <div class="field-value">${escapeHtml(address)}</div>
+            </div>
+
+            <div class="field">
+              <div class="field-title">取得元</div>
+              <div class="field-value">${escapeHtml(data.source || "")} / ${escapeHtml(item.table || "")}</div>
+            </div>
+
+            <div class="copy-row">
+              <button type="button" onclick='copyText(${JSON.stringify(copyBody)})'>結果をコピー</button>
+              <button type="button" class="secondary" onclick='copyText(${JSON.stringify(address)})'>住所のみコピー</button>
+            </div>
+
+            <div class="small">raw</div>
+            <pre class="raw">${escapeHtml(rawJson)}</pre>
+          </div>
+        `;
+      }).join("");
+
+      resultsEl.innerHTML = `<div class="list">${html}</div>`;
+    }
+
+    async function search() {
+      const q = qEl.value.trim();
+      if (!q) {
+        setStatus("検索語を入れてください");
+        clearResults();
+        return;
+      }
+
+      setStatus("検索中...");
+      clearResults();
+
+      try {
+        const res = await fetch(`${API_BASE}?q=${encodeURIComponent(q)}`, {
+          method: "GET"
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        setStatus(`完了: ${data.count ?? 0}件`);
+        renderResults(data);
+      } catch (err) {
+        setStatus(`エラー: ${err.message}`);
+        clearResults();
+      }
+    }
+
+    searchBtn.addEventListener("click", search);
+    clearBtn.addEventListener("click", () => {
+      qEl.value = "";
+      setStatus("");
+      clearResults();
+      qEl.focus();
+    });
+
+    qEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") search();
+    });
+  </script>
+</body>
+</html>
