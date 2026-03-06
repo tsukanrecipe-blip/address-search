@@ -1,11 +1,7 @@
 {
   "functions": {
     "api/search.py": {
-      "runtime": "python3.11",
-      "includeFiles": [
-        "zipcode.db",
-        "jigyosyo.db"
-      ]
+      "includeFiles": "db/*.db"
     }
   }
 }
