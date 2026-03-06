@@ -6,7 +6,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 ZIP_DB = BASE_DIR / "zipcode.db"
 JIG_DB = BASE_DIR / "jigyosyo.db"
 
