@@ -196,7 +196,7 @@
       </div>
 
       <div class="footer-note">
-        英文は結合せず pref_en / city_en / town_en に分割表示。<br>
+        英文は API の rome を pref_en / city_en / town_en に分割表示。<br>
         CSVも選択した1件のみ、同じ分割列で出力。
       </div>
     </div>
@@ -245,6 +245,22 @@
       return "";
     }
 
+    function splitRome(rome) {
+      const s = String(rome ?? "").trim();
+      if (!s) return ["", "", ""];
+
+      const parts = s.split(/\s+/);
+      if (parts.length < 5) {
+        return [s, "", ""];
+      }
+
+      const prefEn = parts.slice(0, 2).join(" ");
+      const cityEn = parts.slice(2, 4).join(" ");
+      const townEn = parts.slice(4).join(" ");
+
+      return [prefEn, cityEn, townEn];
+    }
+
     function normalizeRows(data) {
       if (!data || !Array.isArray(data.results)) return [];
 
@@ -257,9 +273,8 @@
         const town = pickValue(row, ["town", "address"]) || pickValue(raw, ["town", "address", "addr"]);
         const kana = pickValue(row, ["kana"]) || pickValue(raw, ["kana", "office_kana", "town_kana"]);
 
-        const prefEn = pickValue(row, ["pref_en"]) || pickValue(raw, ["pref_en"]);
-        const cityEn = pickValue(row, ["city_en"]) || pickValue(raw, ["city_en"]);
-        const townEn = pickValue(row, ["town_en"]) || pickValue(raw, ["town_en"]);
+        const rome = pickValue(row, ["rome"]) || pickValue(raw, ["rome"]);
+        const [prefEn, cityEn, townEn] = splitRome(rome);
 
         return {
           postal: postal ?? "",
