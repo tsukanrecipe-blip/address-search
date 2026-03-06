@@ -3,149 +3,189 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>配送先検索</title>
+  <title>郵便番号検索</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
-      background: #f6f7fb;
-      color: #222;
+      background: #f3f6fb;
+      color: #111827;
     }
     .wrap {
-      max-width: 720px;
-      margin: 40px auto;
-      padding: 24px;
+      max-width: 1400px;
+      margin: 24px auto;
+      padding: 0 16px;
     }
     .card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      background: #ffffff;
+      border: 1px solid #dbe3ee;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
+    .toolbar {
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
     }
-    .sub {
-      margin: 0 0 20px;
-      color: #666;
-      font-size: 14px;
-    }
-    label {
-      display: block;
-      margin: 0 0 8px;
+    .title {
+      margin: 0 0 12px;
+      font-size: 22px;
       font-weight: 700;
-      font-size: 14px;
     }
     .row {
       display: flex;
       gap: 10px;
+      align-items: center;
       flex-wrap: wrap;
-      margin-bottom: 12px;
+    }
+    .label {
+      font-size: 14px;
+      font-weight: 700;
     }
     input[type="text"] {
-      flex: 1 1 360px;
-      min-width: 0;
-      height: 48px;
+      flex: 1 1 420px;
+      min-width: 240px;
+      height: 44px;
       padding: 0 14px;
-      border: 1px solid #cfd5df;
+      border: 1px solid #cbd5e1;
       border-radius: 10px;
       font-size: 16px;
       background: #fff;
     }
     button {
-      height: 48px;
+      height: 44px;
       padding: 0 18px;
       border: 0;
       border-radius: 10px;
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      background: #111827;
       color: #fff;
+      background: #0f172a;
     }
     button.secondary {
       background: #6b7280;
     }
     .hint {
-      color: #666;
+      margin-top: 10px;
       font-size: 13px;
-      margin: 0 0 18px;
+      color: #6b7280;
     }
     .status {
-      min-height: 24px;
-      margin: 8px 0 16px;
+      padding: 12px 18px 0;
+      min-height: 28px;
       font-size: 14px;
-      color: #444;
+      color: #374151;
     }
-    .result {
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 16px;
-      background: #fafafa;
-      margin-top: 12px;
-    }
-    .result h2 {
-      margin: 0 0 12px;
-      font-size: 18px;
-    }
-    .field {
-      margin-bottom: 12px;
-    }
-    .field-title {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 4px;
-    }
-    .field-value {
-      font-size: 16px;
-      word-break: break-all;
-      white-space: pre-wrap;
-    }
-    .list {
-      display: grid;
-      gap: 12px;
-    }
-    .raw {
-      margin-top: 16px;
-      background: #111827;
-      color: #f9fafb;
-      border-radius: 10px;
-      padding: 12px;
+    .table-wrap {
+      padding: 12px 18px 18px;
       overflow: auto;
-      font-size: 12px;
     }
-    .copy-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 16px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      min-width: 1100px;
     }
-    .small {
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #eef3f8;
+      color: #111827;
+      font-size: 14px;
+      font-weight: 700;
+      border-bottom: 1px solid #d1d5db;
+      padding: 10px 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 8px;
+      font-size: 14px;
+      vertical-align: top;
+      word-break: break-word;
+      background: #fff;
+    }
+    tbody tr:hover td {
+      background: #f8fafc;
+    }
+    .num {
+      text-align: left;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .kana {
+      font-size: 13px;
+      color: #111827;
+    }
+    .rome {
+      font-size: 13px;
+      color: #111827;
+      word-break: break-all;
+    }
+    .empty {
+      padding: 20px 8px;
+      color: #6b7280;
+    }
+    .footer-note {
+      padding: 0 18px 18px;
       font-size: 12px;
       color: #6b7280;
-      margin-top: 14px;
+    }
+    @media (max-width: 768px) {
+      .title {
+        font-size: 20px;
+      }
+      input[type="text"] {
+        flex-basis: 100%;
+      }
+      button {
+        flex: 0 0 auto;
+      }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>配送先検索</h1>
-      <p class="sub">郵便番号またはキーワードで検索</p>
-
-      <label for="q">検索</label>
-      <div class="row">
-        <input id="q" type="text" placeholder="例：1000001 / 港島 / 千代田" />
-        <button id="searchBtn">検索</button>
-        <button id="clearBtn" class="secondary" type="button">クリア</button>
+      <div class="toolbar">
+        <h1 class="title">郵便番号検索</h1>
+        <div class="row">
+          <div class="label">検索:</div>
+          <input id="q" type="text" placeholder="例：万博 / 国立民族 / 5658511 / 千代田" />
+          <button id="searchBtn" type="button">検索</button>
+          <button id="clearBtn" type="button" class="secondary">クリア</button>
+        </div>
+        <div class="hint">郵便番号はハイフンありでも可。文字検索は事業所名・事業所カナも対象。</div>
       </div>
-      <p class="hint">郵便番号はハイフンありでも可。見つからなければ事業所DBも自動で検索。</p>
 
       <div id="status" class="status"></div>
-      <div id="results"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 140px;">郵便番号</th>
+              <th style="width: 150px;">都道府県</th>
+              <th style="width: 150px;">市区町村</th>
+              <th style="width: 420px;">町域/事業所</th>
+              <th style="width: 390px;">カタカナ読み（事業所は名称カナ）</th>
+              <th style="width: 360px;">ローマ字表記</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+            <tr>
+              <td colspan="6" class="empty">ここに検索結果が表示されます</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footer-note">ローカル版と同じく一覧で確認する前提の表示です。</div>
     </div>
   </div>
 
@@ -155,7 +195,7 @@
     const searchBtn = document.getElementById("searchBtn");
     const clearBtn = document.getElementById("clearBtn");
     const statusEl = document.getElementById("status");
-    const resultsEl = document.getElementById("results");
+    const resultsBodyEl = document.getElementById("resultsBody");
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -170,104 +210,63 @@
       statusEl.textContent = text || "";
     }
 
-    function clearResults() {
-      resultsEl.innerHTML = "";
+    function clearResults(message = "ここに検索結果が表示されます") {
+      resultsBodyEl.innerHTML = `
+        <tr>
+          <td colspan="6" class="empty">${escapeHtml(message)}</td>
+        </tr>
+      `;
     }
 
-    function toAddressLine(item) {
-      return item.address || "";
-    }
-
-    function toDisplayName(item) {
-      return item.name || "(名称なし)";
-    }
-
-    async function copyText(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        setStatus("コピーしました");
-      } catch {
-        setStatus("コピーに失敗しました");
-      }
+    function normalizeRows(data) {
+      if (!data || !Array.isArray(data.results)) return [];
+      return data.results.map(row => ({
+        postal: row.postal ?? row.zipcode ?? "",
+        pref: row.pref ?? "",
+        city: row.city ?? "",
+        town: row.town ?? row.address ?? "",
+        kana: row.kana ?? "",
+        rome: row.rome ?? ""
+      }));
     }
 
     function renderResults(data) {
-      clearResults();
+      const rows = normalizeRows(data);
 
-      if (!data || !Array.isArray(data.results) || data.results.length === 0) {
-        resultsEl.innerHTML = `
-          <div class="result">
-            <h2>検索結果</h2>
-            <div class="field">
-              <div class="field-title">結果</div>
-              <div class="field-value">該当なし</div>
-            </div>
-          </div>
-        `;
+      if (rows.length === 0) {
+        clearResults("該当なし");
         return;
       }
 
-      const html = data.results.map((item, idx) => {
-        const zipcode = item.zipcode || "";
-        const name = toDisplayName(item);
-        const address = toAddressLine(item);
-        const rawJson = JSON.stringify(item.raw || {}, null, 2);
-        const copyBody = [zipcode, name !== "(名称なし)" ? name : "", address]
-          .filter(Boolean)
-          .join("\n");
+      const html = rows.map((row) => `
+        <tr>
+          <td class="num">${escapeHtml(row.postal)}</td>
+          <td>${escapeHtml(row.pref)}</td>
+          <td>${escapeHtml(row.city)}</td>
+          <td>${escapeHtml(row.town)}</td>
+          <td class="kana">${escapeHtml(row.kana)}</td>
+          <td class="rome">${escapeHtml(row.rome)}</td>
+        </tr>
+      `).join("");
 
-        return `
-          <div class="result">
-            <h2>結果 ${idx + 1}</h2>
-
-            <div class="field">
-              <div class="field-title">郵便番号</div>
-              <div class="field-value">${escapeHtml(zipcode)}</div>
-            </div>
-
-            <div class="field">
-              <div class="field-title">名称</div>
-              <div class="field-value">${escapeHtml(name)}</div>
-            </div>
-
-            <div class="field">
-              <div class="field-title">住所</div>
-              <div class="field-value">${escapeHtml(address)}</div>
-            </div>
-
-            <div class="field">
-              <div class="field-title">取得元</div>
-              <div class="field-value">${escapeHtml(data.source || "")} / ${escapeHtml(item.table || "")}</div>
-            </div>
-
-            <div class="copy-row">
-              <button type="button" onclick='copyText(${JSON.stringify(copyBody)})'>結果をコピー</button>
-              <button type="button" class="secondary" onclick='copyText(${JSON.stringify(address)})'>住所のみコピー</button>
-            </div>
-
-            <div class="small">raw</div>
-            <pre class="raw">${escapeHtml(rawJson)}</pre>
-          </div>
-        `;
-      }).join("");
-
-      resultsEl.innerHTML = `<div class="list">${html}</div>`;
+      resultsBodyEl.innerHTML = html;
     }
 
     async function search() {
       const q = qEl.value.trim();
       if (!q) {
         setStatus("検索語を入れてください");
-        clearResults();
+        clearResults("ここに検索結果が表示されます");
         return;
       }
 
       setStatus("検索中...");
-      clearResults();
+      clearResults("検索中...");
 
       try {
         const res = await fetch(`${API_BASE}?q=${encodeURIComponent(q)}`, {
-          method: "GET"
+          method: "GET",
+          cache: "no-store"
         });
 
         if (!res.ok) {
@@ -279,20 +278,23 @@
         renderResults(data);
       } catch (err) {
         setStatus(`エラー: ${err.message}`);
-        clearResults();
+        clearResults("エラーが発生しました");
       }
     }
 
     searchBtn.addEventListener("click", search);
+
     clearBtn.addEventListener("click", () => {
       qEl.value = "";
       setStatus("");
-      clearResults();
+      clearResults("ここに検索結果が表示されます");
       qEl.focus();
     });
 
     qEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") search();
+      if (e.key === "Enter") {
+        search();
+      }
     });
   </script>
 </body>
