@@ -13,7 +13,7 @@
       color: #111827;
     }
     .wrap {
-      max-width: 1400px;
+      max-width: 1680px;
       margin: 24px auto;
       padding: 0 16px;
     }
@@ -72,6 +72,7 @@
       margin-top: 10px;
       font-size: 13px;
       color: #6b7280;
+      line-height: 1.5;
     }
     .status {
       padding: 12px 18px 0;
@@ -87,7 +88,7 @@
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      min-width: 1100px;
+      min-width: 1550px;
     }
     thead th {
       position: sticky;
@@ -113,16 +114,19 @@
     tbody tr:hover td {
       background: #f8fafc;
     }
+    tbody tr.selected td {
+      background: #dbeafe !important;
+    }
+    tbody tr {
+      cursor: pointer;
+    }
     .num {
       text-align: left;
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
     }
-    .kana {
-      font-size: 13px;
-      color: #111827;
-    }
-    .rome {
+    .kana,
+    .en {
       font-size: 13px;
       color: #111827;
       word-break: break-all;
@@ -135,6 +139,7 @@
       padding: 0 18px 18px;
       font-size: 12px;
       color: #6b7280;
+      line-height: 1.5;
     }
     @media (max-width: 768px) {
       .title {
@@ -160,7 +165,10 @@
           <button id="searchBtn" type="button">検索</button>
           <button id="clearBtn" type="button" class="secondary">クリア</button>
         </div>
-        <div class="hint">郵便番号はハイフンありでも可。文字検索は事業所名・事業所カナも対象。</div>
+        <div class="hint">
+          郵便番号はハイフンありでも可。文字検索は事業所名・事業所カナも対象。<br>
+          行クリックで選択、ダブルクリックでその1行だけCSVダウンロード。
+        </div>
       </div>
 
       <div id="status" class="status"></div>
@@ -169,23 +177,28 @@
         <table>
           <thead>
             <tr>
-              <th style="width: 140px;">郵便番号</th>
-              <th style="width: 150px;">都道府県</th>
-              <th style="width: 150px;">市区町村</th>
-              <th style="width: 420px;">町域/事業所</th>
-              <th style="width: 390px;">カタカナ読み（事業所は名称カナ）</th>
-              <th style="width: 360px;">ローマ字表記</th>
+              <th style="width: 120px;">郵便番号</th>
+              <th style="width: 120px;">都道府県</th>
+              <th style="width: 120px;">市区町村</th>
+              <th style="width: 320px;">町域/事業所</th>
+              <th style="width: 260px;">カタカナ読み（事業所は名称カナ）</th>
+              <th style="width: 180px;">pref_en</th>
+              <th style="width: 220px;">city_en</th>
+              <th style="width: 300px;">town_en</th>
             </tr>
           </thead>
           <tbody id="resultsBody">
             <tr>
-              <td colspan="6" class="empty">ここに検索結果が表示されます</td>
+              <td colspan="8" class="empty">ここに検索結果が表示されます</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="footer-note">ローカル版と同じく一覧で確認する前提の表示です。</div>
+      <div class="footer-note">
+        英文は結合せず pref_en / city_en / town_en に分割表示。<br>
+        CSVも選択した1件のみ、同じ分割列で出力。
+      </div>
     </div>
   </div>
 
@@ -196,6 +209,9 @@
     const clearBtn = document.getElementById("clearBtn");
     const statusEl = document.getElementById("status");
     const resultsBodyEl = document.getElementById("resultsBody");
+
+    let currentRows = [];
+    let selectedIndex = -1;
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -211,45 +227,154 @@
     }
 
     function clearResults(message = "ここに検索結果が表示されます") {
+      currentRows = [];
+      selectedIndex = -1;
       resultsBodyEl.innerHTML = `
         <tr>
-          <td colspan="6" class="empty">${escapeHtml(message)}</td>
+          <td colspan="8" class="empty">${escapeHtml(message)}</td>
         </tr>
       `;
     }
 
+    function pickValue(row, keys) {
+      for (const key of keys) {
+        if (row && row[key] !== undefined && row[key] !== null && row[key] !== "") {
+          return row[key];
+        }
+      }
+      return "";
+    }
+
     function normalizeRows(data) {
       if (!data || !Array.isArray(data.results)) return [];
-      return data.results.map(row => ({
-        postal: row.postal ?? row.zipcode ?? "",
-        pref: row.pref ?? "",
-        city: row.city ?? "",
-        town: row.town ?? row.address ?? "",
-        kana: row.kana ?? "",
-        rome: row.rome ?? ""
-      }));
+
+      return data.results.map(row => {
+        const raw = row.raw || {};
+
+        const postal = pickValue(row, ["postal", "zipcode"]) || pickValue(raw, ["postal", "zipcode"]);
+        const pref = pickValue(row, ["pref"]) || pickValue(raw, ["pref"]);
+        const city = pickValue(row, ["city"]) || pickValue(raw, ["city"]);
+        const town = pickValue(row, ["town", "address"]) || pickValue(raw, ["town", "address", "addr"]);
+        const kana = pickValue(row, ["kana"]) || pickValue(raw, ["kana", "office_kana", "town_kana"]);
+
+        const prefEn = pickValue(row, ["pref_en"]) || pickValue(raw, ["pref_en"]);
+        const cityEn = pickValue(row, ["city_en"]) || pickValue(raw, ["city_en"]);
+        const townEn = pickValue(row, ["town_en"]) || pickValue(raw, ["town_en"]);
+
+        return {
+          postal: postal ?? "",
+          pref: pref ?? "",
+          city: city ?? "",
+          town: town ?? "",
+          kana: kana ?? "",
+          pref_en: prefEn ?? "",
+          city_en: cityEn ?? "",
+          town_en: townEn ?? ""
+        };
+      });
     }
 
     function renderResults(data) {
-      const rows = normalizeRows(data);
+      currentRows = normalizeRows(data);
+      selectedIndex = -1;
 
-      if (rows.length === 0) {
+      if (currentRows.length === 0) {
         clearResults("該当なし");
         return;
       }
 
-      const html = rows.map((row) => `
-        <tr>
+      const html = currentRows.map((row, idx) => `
+        <tr data-index="${idx}">
           <td class="num">${escapeHtml(row.postal)}</td>
           <td>${escapeHtml(row.pref)}</td>
           <td>${escapeHtml(row.city)}</td>
           <td>${escapeHtml(row.town)}</td>
           <td class="kana">${escapeHtml(row.kana)}</td>
-          <td class="rome">${escapeHtml(row.rome)}</td>
+          <td class="en">${escapeHtml(row.pref_en)}</td>
+          <td class="en">${escapeHtml(row.city_en)}</td>
+          <td class="en">${escapeHtml(row.town_en)}</td>
         </tr>
       `).join("");
 
       resultsBodyEl.innerHTML = html;
+
+      const trList = resultsBodyEl.querySelectorAll("tr[data-index]");
+      trList.forEach(tr => {
+        tr.addEventListener("click", () => {
+          const idx = Number(tr.dataset.index);
+          selectRow(idx);
+        });
+
+        tr.addEventListener("dblclick", () => {
+          const idx = Number(tr.dataset.index);
+          selectRow(idx);
+          downloadRowCsv(currentRows[idx]);
+        });
+      });
+    }
+
+    function selectRow(idx) {
+      selectedIndex = idx;
+      const trList = resultsBodyEl.querySelectorAll("tr[data-index]");
+      trList.forEach(tr => {
+        tr.classList.toggle("selected", Number(tr.dataset.index) === idx);
+      });
+      if (currentRows[idx]) {
+        setStatus(`選択中: ${currentRows[idx].postal} ${currentRows[idx].pref}${currentRows[idx].city}${currentRows[idx].town}`);
+      }
+    }
+
+    function csvEscape(value) {
+      const s = String(value ?? "");
+      return `"${s.replaceAll('"', '""')}"`;
+    }
+
+    function makeCsvText(row) {
+      const header = [
+        "郵便番号",
+        "都道府県",
+        "市区町村",
+        "町域/事業所",
+        "カタカナ読み（事業所は名称カナ）",
+        "pref_en",
+        "city_en",
+        "town_en"
+      ];
+
+      const data = [
+        row.postal,
+        row.pref,
+        row.city,
+        row.town,
+        row.kana,
+        row.pref_en,
+        row.city_en,
+        row.town_en
+      ];
+
+      return [
+        header.map(csvEscape).join(","),
+        data.map(csvEscape).join(",")
+      ].join("\r\n");
+    }
+
+    function downloadRowCsv(row) {
+      if (!row) return;
+
+      const csvText = "\uFEFF" + makeCsvText(row);
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const safePostal = String(row.postal || "row").replace(/[^\dA-Za-z_-]/g, "_");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `address_${safePostal}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setStatus(`CSVダウンロード: ${row.postal} ${row.pref}${row.city}${row.town}`);
     }
 
     async function search() {
